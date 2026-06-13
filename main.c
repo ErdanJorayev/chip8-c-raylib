@@ -25,6 +25,7 @@ void HandleInput(Chip8 * chip8)
 }
 
 void WorkChip8(Chip8 * ch);
+int SelectGame(char * games_lists[], int total_games);
 
 int main() 
 {
@@ -32,41 +33,16 @@ int main()
 
     Chip8 chip8;
     char * games_lists[100];
-    unsigned int total_games = GetCh8Games(games_lists, 100);
+    int total = GetCh8Games(games_lists, 100);
 
-    unsigned int selected_game = 0;
-    bool game_selected = false;
-
-    // Инициализация окна Raylib 64*12 x 32*12
     InitWindow(screen_width, screen_height, "C + Raylib CHIP-8 Emulator");
-    SetTargetFPS(60); // Частота обновления экрана и таймеров
+    SetTargetFPS(60); 
 
-    while (!WindowShouldClose() && !game_selected) 
+    int selected_game = SelectGame(games_lists, total);
+
+    if (selected_game == -1) 
     {
-        // Обработка кнопок в меню
-        if (IsKeyPressed(KEY_DOWN) && total_games > 0) 
-            selected_game = (selected_game + 1) % total_games;
-        if (IsKeyPressed(KEY_UP) && total_games > 0) 
-            selected_game = (selected_game - 1 + total_games) % total_games;
-        if (IsKeyPressed(KEY_ENTER) && total_games > 0) 
-            game_selected = true; // Выходим из цикла меню
-
-        // Отрисовка меню
-        BeginDrawing();       
-        ClearBackground(BLACK);
-
-        if (total_games == 0) 
-            DrawText("No ROMs found in 'games/' folder!", 30, screen_height / 2, 20, RED);
-        else 
-            DrawGamesMenu(games_lists, total_games, selected_game, screen_width, screen_height);
-        EndDrawing();
-    }
-
-    // Если пользователь закрыл окно крестиком во время меню — завершаем программу
-    if (WindowShouldClose()) 
-    {
-        // Освобождаем память перед выходом
-        for (unsigned int i = 0; i < total_games; i++) 
+        for (int i = 0; i < total; i++) 
             free(games_lists[i]);
         CloseWindow();
         return 0;
@@ -75,18 +51,21 @@ int main()
     Chip8_Init(&chip8);
     Chip8_LoadROM(&chip8, games_lists[selected_game]);
 
-    WorkChip8(&chip8); // работа чипа
+    WorkChip8(&chip8); 
+
+    for (int i = 0; i < total; i++) 
+        free(games_lists[i]);
 
     CloseWindow();
     return 0;
 }
+
 
 void WorkChip8(Chip8 * chip8)
 {
     while (!WindowShouldClose()) 
     {
         HandleInput(chip8);
-
         // Стандартные ROM выполняют ~8-10 процессорных циклов за 1 кадр графики (60Гц)
         for (size_t i = 0; i < 8; i++) 
             Chip8_Cycle(chip8);
@@ -105,7 +84,37 @@ void WorkChip8(Chip8 * chip8)
                 if (chip8->video[y * 64 + x] != 0) 
                     DrawRectangle(x * SCALE, y * SCALE, SCALE - 1, SCALE - 1, WHITE);
         }
-
         EndDrawing();
     }
+}
+
+int SelectGame(char * games_lists[], int total_games)
+{
+    int selectgame = 0;
+    bool enter_game = false;
+
+    while (!WindowShouldClose() && !enter_game) 
+    {
+        if (total_games > 0) 
+        {
+            if (IsKeyPressed(KEY_DOWN)) 
+                selectgame = (selectgame + 1) % total_games;
+            if (IsKeyPressed(KEY_UP)) 
+                selectgame = (selectgame - 1 + total_games) % total_games;
+            if (IsKeyPressed(KEY_ENTER)) 
+                enter_game = true; 
+        }
+
+        BeginDrawing();       
+        ClearBackground(BLACK);
+
+        if (total_games == 0) 
+            DrawText("No ROMs found in 'games/' folder!", 30, screen_height / 2, 20, RED);
+        else 
+            DrawGamesMenu(games_lists, total_games, selectgame, screen_width, screen_height);
+            
+        EndDrawing();
+    }
+
+    return enter_game ? selectgame : -1;
 }
