@@ -15,7 +15,7 @@ void HandleInput(Chip8 * chip8)
     chip8->keypad[0x3] = IsKeyDown(KEY_THREE); chip8->keypad[0xC] = IsKeyDown(KEY_FOUR);
     
     chip8->keypad[0x4] = IsKeyDown(KEY_Q);     chip8->keypad[0x5] = IsKeyDown(KEY_W);
-    chip8->keypad[0x6] = IsKeyDown(KEY_E);     chip8->keypad[0xD] = IsKeyDown(KEY_R); // Исправлен индекс: 0x4 заменен на 0xD
+    chip8->keypad[0x6] = IsKeyDown(KEY_E);     chip8->keypad[0xD] = IsKeyDown(KEY_R); 
     
     chip8->keypad[0x7] = IsKeyDown(KEY_A);     chip8->keypad[0x8] = IsKeyDown(KEY_S);
     chip8->keypad[0x9] = IsKeyDown(KEY_D);     chip8->keypad[0xF] = IsKeyDown(KEY_F);
@@ -24,8 +24,8 @@ void HandleInput(Chip8 * chip8)
     chip8->keypad[0xB] = IsKeyDown(KEY_C);     chip8->keypad[0xE] = IsKeyDown(KEY_V);
 }
 
-void WorkChip8(Chip8 * ch);
-int SelectGame(char * games_lists[], int total_games);
+void WorkChip8(Chip8 * ch, char * games_lists[], unsigned int total_games);
+int SelectGame(char * games_lists[], unsigned int total_games);
 
 int main() 
 {
@@ -33,16 +33,17 @@ int main()
 
     Chip8 chip8;
     char * games_lists[100];
-    int total = GetCh8Games(games_lists, 100);
+    unsigned int total = GetCh8Games(games_lists, 100);
 
     InitWindow(screen_width, screen_height, "C + Raylib CHIP-8 Emulator");
     SetTargetFPS(60); 
+    SetExitKey(KEY_NULL); 
 
     int selected_game = SelectGame(games_lists, total);
 
     if (selected_game == -1) 
     {
-        for (int i = 0; i < total; i++) 
+        for (unsigned int i = 0; i < total; i++) 
             free(games_lists[i]);
         CloseWindow();
         return 0;
@@ -51,33 +52,45 @@ int main()
     Chip8_Init(&chip8);
     Chip8_LoadROM(&chip8, games_lists[selected_game]);
 
-    WorkChip8(&chip8); 
+    WorkChip8(&chip8, games_lists, total); 
 
-    for (int i = 0; i < total; i++) 
+    for (unsigned int i = 0; i < total; i++) 
         free(games_lists[i]);
-
+        
     CloseWindow();
     return 0;
 }
 
 
-void WorkChip8(Chip8 * chip8)
+void WorkChip8(Chip8 * chip8, char * games_lists[], unsigned int total_games)
 {
     while (!WindowShouldClose()) 
     {
+        if (IsKeyPressed(KEY_ESCAPE))
+        {
+            int next_game = SelectGame(games_lists, total_games);
+            if (WindowShouldClose()) 
+                break; 
+
+            if (next_game >= 0) 
+            {
+                Chip8_Init(chip8);                        
+                Chip8_LoadROM(chip8, games_lists[next_game]); 
+            }
+            GetKeyPressed(); 
+        }
+
         HandleInput(chip8);
-        // Стандартные ROM выполняют ~8-10 процессорных циклов за 1 кадр графики (60Гц)
+        
         for (size_t i = 0; i < 8; i++) 
             Chip8_Cycle(chip8);
         
-        // Обновление таймеров системы (срабатывают строго на частоте 60 Гц за кадр)
         if (chip8->delay_timer > 0) chip8->delay_timer--;
         if (chip8->sound_timer > 0) chip8->sound_timer--;
 
         BeginDrawing();       
         ClearBackground(BLACK);
 
-        // Рендеринг буфера экрана
         for (size_t y = 0; y < 32; y++) 
         {
             for (size_t x = 0; x < 64; x++) 
@@ -88,9 +101,9 @@ void WorkChip8(Chip8 * chip8)
     }
 }
 
-int SelectGame(char * games_lists[], int total_games)
+int SelectGame(char * games_lists[], unsigned int total_games)
 {
-    int selectgame = 0;
+    unsigned int selectgame = 0;
     bool enter_game = false;
 
     while (!WindowShouldClose() && !enter_game) 
@@ -116,5 +129,5 @@ int SelectGame(char * games_lists[], int total_games)
         EndDrawing();
     }
 
-    return enter_game ? selectgame : -1;
+    return enter_game ? (int)selectgame : -1;
 }

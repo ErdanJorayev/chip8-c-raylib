@@ -25,9 +25,6 @@ const uint8_t fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-// Обнуляем паямть для структуры 
-// Присваиваем стартовый адрес счетчику команд
-// Потом в цикле заполяем шрифтами память
 void Chip8_Init(Chip8 *chip8) 
 {
     memset(chip8, 0, sizeof(*chip8)); 
@@ -37,14 +34,11 @@ void Chip8_Init(Chip8 *chip8)
         chip8->memory[FONTSET_START_ADDRESS + i] = fontset[i]; 
 }
 
-// Открывем ром файл и тащим оттуда команды
-// Грузим опкоды в память, начиная с адреса 0x200
 bool Chip8_LoadROM(Chip8 *chip8, const char *filename) 
 {
     FILE *file = fopen(filename, "rb");
     if (!file) return false;
 
-    // Чтение ROM-файла в память начиная с адреса 0x200
     fread(&chip8->memory[START_ADDRESS], 1, 4096 - START_ADDRESS, file);
     fclose(file);
     return true;
