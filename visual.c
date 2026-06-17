@@ -3,24 +3,23 @@
 #include <string.h>
 #include <stdlib.h>
 
-// Грузим игры
+extern const int screen_width;
+extern const int screen_height;
+
 unsigned int GetCh8Games(char * games_array[], unsigned int sz) 
 {
     unsigned int game_count = 0;
-
     FilePathList files = LoadDirectoryFiles("games");
 
     for (unsigned int i = 0; i < files.count; i++) 
     {
         if (IsFileExtension(files.paths[i], ".ch8")) 
         {
-            games_array[game_count] = malloc(strlen(files.paths[i]) + 1);
+            
+            games_array[game_count] = strdup(files.paths[i]);
            
             if (games_array[game_count] != NULL) 
-            {
-                strcpy(games_array[game_count], files.paths[i]);
                 game_count++;
-            }
             
             if (game_count >= sz) 
                 break; 
@@ -31,7 +30,7 @@ unsigned int GetCh8Games(char * games_array[], unsigned int sz)
     return game_count; 
 }
 
-void DrawGamesMenu(char *games_array[], unsigned int total_games, unsigned int selected_game, int screen_width, int screen_height) 
+void DrawGamesMenu(char *games_array[], unsigned int total_games, unsigned int selected_game) 
 {
     DrawRectangleLines(10, 10, screen_width - 20, screen_height - 20, DARKGREEN);
 
@@ -57,15 +56,16 @@ void DrawGamesMenu(char *games_array[], unsigned int total_games, unsigned int s
     {
         int local_row = i - start_index;
         int y_pos = start_y + (local_row * line_height);
+        const char * game_name = GetFileNameWithoutExt(games_array[i]);
 
         if (i == selected_game) 
         {
             DrawRectangle(30, y_pos - 4, screen_width - 60, 24, DARKGREEN);
-            DrawText(games_array[i] + 6, 50, y_pos, 18, WHITE);
+            DrawText(game_name, 50, y_pos, 18, WHITE);
             DrawText(">", 35, y_pos, 18, GREEN);
         } 
         else 
-            DrawText(games_array[i] + 6, 50, y_pos, 18, LIME);
+            DrawText(game_name, 50, y_pos, 18, LIME);
         
     }
 

@@ -4,25 +4,9 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define SCALE 12 // Масштаб отображения одного пикселя
+const int SCALE = 12; // Масштаб отображения одного пикселя
 const int screen_width = 64 * SCALE;
 const int screen_height = 32 * SCALE;
-
-// Карта оригинальных клавиш CHIP-8 на раскладку клавиатуры ПК
-void HandleInput(Chip8 * chip8) 
-{
-    chip8->keypad[0x1] = IsKeyDown(KEY_ONE);   chip8->keypad[0x2] = IsKeyDown(KEY_TWO);
-    chip8->keypad[0x3] = IsKeyDown(KEY_THREE); chip8->keypad[0xC] = IsKeyDown(KEY_FOUR);
-    
-    chip8->keypad[0x4] = IsKeyDown(KEY_Q);     chip8->keypad[0x5] = IsKeyDown(KEY_W);
-    chip8->keypad[0x6] = IsKeyDown(KEY_E);     chip8->keypad[0xD] = IsKeyDown(KEY_R); 
-    
-    chip8->keypad[0x7] = IsKeyDown(KEY_A);     chip8->keypad[0x8] = IsKeyDown(KEY_S);
-    chip8->keypad[0x9] = IsKeyDown(KEY_D);     chip8->keypad[0xF] = IsKeyDown(KEY_F);
-    
-    chip8->keypad[0xA] = IsKeyDown(KEY_Z);     chip8->keypad[0x0] = IsKeyDown(KEY_X);
-    chip8->keypad[0xB] = IsKeyDown(KEY_C);     chip8->keypad[0xE] = IsKeyDown(KEY_V);
-}
 
 void WorkChip8(Chip8 * ch, char * games_lists[], unsigned int total_games);
 int SelectGame(char * games_lists[], unsigned int total_games);
@@ -124,10 +108,11 @@ int SelectGame(char * games_lists[], unsigned int total_games)
         if (total_games == 0) 
             DrawText("No ROMs found in 'games/' folder!", 30, screen_height / 2, 20, RED);
         else 
-            DrawGamesMenu(games_lists, total_games, selectgame, screen_width, screen_height);
+            DrawGamesMenu(games_lists, total_games, selectgame);
             
         EndDrawing();
     }
 
     return enter_game ? (int)selectgame : -1;
 }
+

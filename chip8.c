@@ -4,6 +4,9 @@
 #include <string.h>
 #include <raylib.h>
 
+static const int START_ADDRESS = 0x200;
+static const int FONTSET_START_ADDRESS = 0x50;
+
 // Стандартный набор встроенных шрифтов CHIP-8
 const uint8_t fontset[80] = 
 {
@@ -24,6 +27,21 @@ const uint8_t fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
+
+void HandleInput(Chip8 * chip8) 
+{
+    chip8->keypad[0x1] = IsKeyDown(KEY_ONE);   chip8->keypad[0x2] = IsKeyDown(KEY_TWO);
+    chip8->keypad[0x3] = IsKeyDown(KEY_THREE); chip8->keypad[0xC] = IsKeyDown(KEY_FOUR);
+    
+    chip8->keypad[0x4] = IsKeyDown(KEY_Q);     chip8->keypad[0x5] = IsKeyDown(KEY_W);
+    chip8->keypad[0x6] = IsKeyDown(KEY_E);     chip8->keypad[0xD] = IsKeyDown(KEY_R); 
+    
+    chip8->keypad[0x7] = IsKeyDown(KEY_A);     chip8->keypad[0x8] = IsKeyDown(KEY_S);
+    chip8->keypad[0x9] = IsKeyDown(KEY_D);     chip8->keypad[0xF] = IsKeyDown(KEY_F);
+    
+    chip8->keypad[0xA] = IsKeyDown(KEY_Z);     chip8->keypad[0x0] = IsKeyDown(KEY_X);
+    chip8->keypad[0xB] = IsKeyDown(KEY_C);     chip8->keypad[0xE] = IsKeyDown(KEY_V);
+}
 
 void Chip8_Init(Chip8 *chip8) 
 {
@@ -209,7 +227,7 @@ void Chip8_Cycle(Chip8 *chip8)
             uint8_t y_pos = chip8->registers[Y] % 32; // Получаем координату Y с защитой от вылета за экран
             chip8->registers[0xF] = 0; // Сбрасываем флаг столкновения в VF перед отрисовкой
 
-            for (size_t row = 0; row < N; row++) // Цикл по строкам спрайта высотой N
+            for (uint8_t row = 0; row < N; row++) // Цикл по строкам спрайта высотой N
             {
                 uint8_t sprite_byte = chip8->memory[chip8->index + row]; // Читаем байт строки спрайта из памяти
                 if (y_pos + row >= 32) break; // Прекращаем рисовать, если вышли за нижнюю границу экрана
@@ -316,13 +334,13 @@ void Chip8_Cycle(Chip8 *chip8)
 
                 case 0x55: // Инструкция FX55: LD [I], Vx (Сохранить регистры в память)
                 {
-                    for (int i = 0; i <= X; i++) chip8->memory[chip8->index + i] = chip8->registers[i]; // Пишем регистры от V0 до VX в память начиная с I
+                    for (uint8_t i = 0; i <= X; i++) chip8->memory[chip8->index + i] = chip8->registers[i]; // Пишем регистры от V0 до VX в память начиная с I
                     break;
                 }
 
                 case 0x65: // Инструкция FX65: LD Vx, [I] (Загрузить регистры из памяти)
                 {
-                    for (int i = 0; i <= X; i++) chip8->registers[i] = chip8->memory[chip8->index + i]; // Заполняем регистры от V0 до VX данными из памяти начиная с I
+                    for (uint8_t i = 0; i <= X; i++) chip8->registers[i] = chip8->memory[chip8->index + i]; // Заполняем регистры от V0 до VX данными из памяти начиная с I
                     break;
                 }
             }
