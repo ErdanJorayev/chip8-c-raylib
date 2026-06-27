@@ -4,7 +4,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-const int SCALE = 12; // Масштаб отображения одного пикселя
+const int SCALE = 12; 
 const int screen_width = 64 * SCALE;
 const int screen_height = 32 * SCALE;
 
@@ -69,8 +69,10 @@ void WorkChip8(Chip8 * chip8, char * games_lists[], unsigned int total_games)
         for (size_t i = 0; i < 8; i++) 
             Chip8_Cycle(chip8);
         
-        if (chip8->delay_timer > 0) chip8->delay_timer--;
-        if (chip8->sound_timer > 0) chip8->sound_timer--;
+        if (chip8->delay_timer > 0) 
+            chip8->delay_timer--;
+        if (chip8->sound_timer > 0) 
+            chip8->sound_timer--;
 
         BeginDrawing();       
         ClearBackground(BLACK);

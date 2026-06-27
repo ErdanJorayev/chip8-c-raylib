@@ -30,7 +30,7 @@ unsigned int GetCh8Games(char * games_array[], unsigned int sz)
     return game_count; 
 }
 
-void DrawGamesMenu(char *games_array[], unsigned int total_games, unsigned int selected_game) 
+void DrawGamesMenu(char * games_array[], unsigned int total_games, unsigned int selected_game) 
 {
     DrawRectangleLines(10, 10, screen_width - 20, screen_height - 20, DARKGREEN);
 
@@ -41,7 +41,8 @@ void DrawGamesMenu(char *games_array[], unsigned int total_games, unsigned int s
     int start_y = 90;
     
     int max_visible_games = (screen_height - 60 - start_y) / line_height; 
-    if (max_visible_games <= 0) max_visible_games = 1;
+    if (max_visible_games <= 0) 
+        max_visible_games = 1;
 
     unsigned int start_index = 0;
     if (selected_game >= (unsigned int)max_visible_games) 

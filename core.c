@@ -7,7 +7,6 @@
 static const int START_ADDRESS = 0x200;
 static const int FONTSET_START_ADDRESS = 0x50;
 
-// Стандартный набор встроенных шрифтов CHIP-8
 const uint8_t fontset[80] = 
 {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -55,7 +54,8 @@ void Chip8_Init(Chip8 *chip8)
 bool Chip8_LoadROM(Chip8 *chip8, const char *filename) 
 {
     FILE *file = fopen(filename, "rb");
-    if (!file) return false;
+    if (!file) 
+        return false;
 
     fread(&chip8->memory[START_ADDRESS], 1, 4096 - START_ADDRESS, file);
     fclose(file);

@@ -5,6 +5,6 @@ set(CMAKE_C_STANDARD 23)
 
 find_package(raylib REQUIRED)
 
-add_executable(CHIP-8 main.c chip8.c visual.c)
+add_executable(CHIP-8 main.c core.c gui.c)
 
 target_link_libraries(CHIP-8 PRIVATE raylib)
