@@ -1,24 +1,32 @@
+/*
+    This source code file contains GUI functions
+    Here we get game names from a folder and draw a selection menu
+    of the games taken from the folder    
+*/
+
 #include "chip8.h"
 #include <raylib.h>
 #include <string.h>
 #include <stdlib.h>
 
-extern const int screen_width;
-extern const int screen_height;
+static const int SCALE = 12; 
+const int screen_width = 64 * SCALE;
+const int screen_height = 32 * SCALE;
 
+// Get file names from the games folder
 unsigned int GetCh8Games(char * games_array[], unsigned int sz) 
 {
     unsigned int game_count = 0;
-    FilePathList files = LoadDirectoryFiles("games");
+    FilePathList files = LoadDirectoryFiles("games");         // Get every file from the games folder
 
     for (unsigned int i = 0; i < files.count; i++) 
     {
-        if (IsFileExtension(files.paths[i], ".ch8")) 
+        if (IsFileExtension(files.paths[i], ".ch8"))          // Save only .ch8 files to our game names array
         {
             
-            games_array[game_count] = strdup(files.paths[i]);
+            games_array[game_count] = strdup(files.paths[i]); // strdup automatically calculates string size and allocates memory
            
-            if (games_array[game_count] != NULL) 
+            if (games_array[game_count] != NULL)           
                 game_count++;
             
             if (game_count >= sz) 
@@ -30,11 +38,13 @@ unsigned int GetCh8Games(char * games_array[], unsigned int sz)
     return game_count; 
 }
 
+
+// Draw the game selection menu
 void DrawGamesMenu(char * games_array[], unsigned int total_games, unsigned int selected_game) 
 {
     DrawRectangleLines(10, 10, screen_width - 20, screen_height - 20, DARKGREEN);
 
-    DrawText("CHIP-8 BOOT MENU", screen_width / 2 - 100, 30, 22, GREEN);
+    DrawText("CHIP-8 GAMES", screen_width / 2 - 100, 30, 22, GREEN);
     DrawLine(20, 60, screen_width - 20, 60, GREEN);
 
     int line_height = 28;
@@ -81,3 +91,75 @@ void DrawGamesMenu(char * games_array[], unsigned int total_games, unsigned int 
     DrawText("[UP/DOWN] Select   [ENTER] Start", 30, screen_height - 35, 14, GRAY);
 }
 
+// Work CHIP-8
+void WorkChip8(Chip8 * chip8, char * games_lists[], unsigned int total_games)
+{
+    while (!WindowShouldClose()) 
+    {
+        if (IsKeyPressed(KEY_ESCAPE))
+        {
+            int next_game = SelectGame(games_lists, total_games);
+            if (WindowShouldClose()) 
+                break; 
+
+            if (next_game >= 0) 
+            {
+                Chip8_Init(chip8);                        
+                Chip8_LoadROM(chip8, games_lists[next_game]); 
+            }
+            GetKeyPressed(); 
+        }
+
+        HandleInput(chip8);
+        
+        for (size_t i = 0; i < 8; i++) 
+            Chip8_Cycle(chip8);
+        
+        if (chip8->delay_timer > 0) 
+            chip8->delay_timer--;
+        if (chip8->sound_timer > 0) 
+            chip8->sound_timer--;
+
+        BeginDrawing();       
+        ClearBackground(BLACK);
+
+        for (size_t y = 0; y < 32; y++) 
+        {
+            for (size_t x = 0; x < 64; x++) 
+                if (chip8->video[y * 64 + x] != 0) 
+                    DrawRectangle(x * SCALE, y * SCALE, SCALE - 1, SCALE - 1, WHITE);
+        }
+        EndDrawing();
+    }
+}
+
+int SelectGame(char * games_lists[], unsigned int total_games)
+{
+    unsigned int selectgame = 0;
+    bool enter_game = false;
+
+    while (!WindowShouldClose() && !enter_game) 
+    {
+        if (total_games > 0) 
+        {
+            if (IsKeyPressed(KEY_DOWN)) 
+                selectgame = (selectgame + 1) % total_games;
+            if (IsKeyPressed(KEY_UP)) 
+                selectgame = (selectgame - 1 + total_games) % total_games;
+            if (IsKeyPressed(KEY_ENTER)) 
+                enter_game = true; 
+        }
+
+        BeginDrawing();       
+        ClearBackground(BLACK);
+
+        if (!total_games)                                                                  // Если игр нет выводим сообщение
+            DrawText("No ROMs or no 'games/'", screen_width / 2 - 140, screen_height / 2, 20, RED);
+        else 
+            DrawGamesMenu(games_lists, total_games, selectgame);
+            
+        EndDrawing();
+    }
+
+    return enter_game ? (int)selectgame : -1;
+}

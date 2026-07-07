@@ -19,11 +19,14 @@ typedef struct
 } Chip8;
 
 void Chip8_Init(Chip8 * chip8);
-bool Chip8_LoadROM(Chip8 * chip8, const char *filename);
+bool Chip8_LoadROM(Chip8 * chip8, const char * filename);
 void Chip8_Cycle(Chip8 * chip8);
 void HandleInput(Chip8 * chip8);
 
 unsigned int GetCh8Games(char * games_array[], unsigned int sz);
 void DrawGamesMenu(char * games_array[], unsigned int total_games, unsigned int selected_game);
+void WorkChip8(Chip8 * chip8, char * games_lists[], unsigned int total_games);
+int SelectGame(char * games_lists[], unsigned int total_games);
+
 
 #endif

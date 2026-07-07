@@ -7,6 +7,7 @@
 static const int START_ADDRESS = 0x200;
 static const int FONTSET_START_ADDRESS = 0x50;
 
+// Font array for CHIP-8
 const uint8_t fontset[80] = 
 {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -27,6 +28,7 @@ const uint8_t fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+// Define input keys
 void HandleInput(Chip8 * chip8) 
 {
     chip8->keypad[0x1] = IsKeyDown(KEY_ONE);   chip8->keypad[0x2] = IsKeyDown(KEY_TWO);
@@ -42,6 +44,7 @@ void HandleInput(Chip8 * chip8)
     chip8->keypad[0xB] = IsKeyDown(KEY_C);     chip8->keypad[0xE] = IsKeyDown(KEY_V);
 }
 
+// Clear memory and load into CHIP-8 RAM
 void Chip8_Init(Chip8 *chip8) 
 {
     memset(chip8, 0, sizeof(*chip8)); 
@@ -51,6 +54,7 @@ void Chip8_Init(Chip8 *chip8)
         chip8->memory[FONTSET_START_ADDRESS + i] = fontset[i]; 
 }
 
+// Open game file and load into CHIP-8 RAM
 bool Chip8_LoadROM(Chip8 *chip8, const char *filename) 
 {
     FILE *file = fopen(filename, "rb");
@@ -62,7 +66,7 @@ bool Chip8_LoadROM(Chip8 *chip8, const char *filename)
     return true;
 }
 
-
+// CHIP-8 instructions
 void Chip8_Cycle(Chip8 *chip8) 
 {
     chip8->opcode = (chip8->memory[chip8->pc] << 8) | chip8->memory[chip8->pc + 1];
@@ -347,5 +351,4 @@ void Chip8_Cycle(Chip8 *chip8)
             break;
         }
     }
-
 }
