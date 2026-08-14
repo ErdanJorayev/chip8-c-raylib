@@ -4,10 +4,10 @@
 #include <string.h>
 #include <raylib.h>
 
-static const int START_ADDRESS = 0x200;
-static const int FONTSET_START_ADDRESS = 0x50;
+static const int FONTSET_START_ADDRESS = 0x50; // Адрес где начинаются шрифты
+static const int START_ADDRESS = 0x200;        // Адрес где начинаются программы
 
-// Font array for CHIP-8
+// Это массив шрифтов. Каждая строчка это 1 символ
 const uint8_t fontset[80] = 
 {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -28,34 +28,45 @@ const uint8_t fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-// Define input keys
+// Если кнопка нажата, IsKeyDonw() вызывает true, иначе false
 void HandleInput(Chip8 * chip8) 
 {
-    chip8->keypad[0x1] = IsKeyDown(KEY_ONE);   chip8->keypad[0x2] = IsKeyDown(KEY_TWO);
-    chip8->keypad[0x3] = IsKeyDown(KEY_THREE); chip8->keypad[0xC] = IsKeyDown(KEY_FOUR);
+    chip8->keypad[0x1] = IsKeyDown(KEY_ONE);   
+    chip8->keypad[0x2] = IsKeyDown(KEY_TWO);
+    chip8->keypad[0x3] = IsKeyDown(KEY_THREE); 
+    chip8->keypad[0xC] = IsKeyDown(KEY_FOUR);
     
-    chip8->keypad[0x4] = IsKeyDown(KEY_Q);     chip8->keypad[0x5] = IsKeyDown(KEY_W);
-    chip8->keypad[0x6] = IsKeyDown(KEY_E);     chip8->keypad[0xD] = IsKeyDown(KEY_R); 
+    chip8->keypad[0x4] = IsKeyDown(KEY_Q);     
+    chip8->keypad[0x5] = IsKeyDown(KEY_W);
+    chip8->keypad[0x6] = IsKeyDown(KEY_E);     
+    chip8->keypad[0xD] = IsKeyDown(KEY_R); 
     
-    chip8->keypad[0x7] = IsKeyDown(KEY_A);     chip8->keypad[0x8] = IsKeyDown(KEY_S);
-    chip8->keypad[0x9] = IsKeyDown(KEY_D);     chip8->keypad[0xF] = IsKeyDown(KEY_F);
+    chip8->keypad[0x7] = IsKeyDown(KEY_A);     
+    chip8->keypad[0x8] = IsKeyDown(KEY_S);
+    chip8->keypad[0x9] = IsKeyDown(KEY_D);     
+    chip8->keypad[0xF] = IsKeyDown(KEY_F);
     
-    chip8->keypad[0xA] = IsKeyDown(KEY_Z);     chip8->keypad[0x0] = IsKeyDown(KEY_X);
-    chip8->keypad[0xB] = IsKeyDown(KEY_C);     chip8->keypad[0xE] = IsKeyDown(KEY_V);
+    chip8->keypad[0xA] = IsKeyDown(KEY_Z);     
+    chip8->keypad[0x0] = IsKeyDown(KEY_X);
+    chip8->keypad[0xB] = IsKeyDown(KEY_C);     
+    chip8->keypad[0xE] = IsKeyDown(KEY_V);
 }
 
-// Clear memory and load into CHIP-8 RAM
+
 void Chip8_Init(Chip8 *chip8) 
 {
+    // Зануляем все поля структуры CHIP-8
     memset(chip8, 0, sizeof(*chip8)); 
+
+    // С этого адреса начинается программа для CHIP-8
     chip8->pc = START_ADDRESS;        
-    
-    for (unsigned int i = 0; i < 80; ++i) 
-        chip8->memory[FONTSET_START_ADDRESS + i] = fontset[i]; 
+
+    // Копируем шрифтовой набор в ОЗУ
+    memcpy(&chip8->memory[FONTSET_START_ADDRESS], fontset, sizeof(fontset));
 }
 
-// Open game file and load into CHIP-8 RAM
-bool Chip8_LoadROM(Chip8 *chip8, const char *filename) 
+// Открываем файл игры и копируем его в наш ОЗУ(массив)
+bool Chip8_LoadROM(Chip8 * chip8, const char * filename) 
 {
     FILE *file = fopen(filename, "rb");
     if (!file) 
@@ -69,71 +80,85 @@ bool Chip8_LoadROM(Chip8 *chip8, const char *filename)
 // CHIP-8 instructions
 void Chip8_Cycle(Chip8 *chip8) 
 {
+    // Так как опкод состоит из 2 частей, а наш проц 8-битный, 
     chip8->opcode = (chip8->memory[chip8->pc] << 8) | chip8->memory[chip8->pc + 1];
     chip8->pc += 2;
 
-    uint16_t opcode = chip8->opcode;
-    uint8_t X    = (opcode & 0x0F00) >> 8; 
-    uint8_t Y    = (opcode & 0x00F0) >> 4;
-    uint8_t N    = (opcode & 0x000F);
-    uint8_t NN   = (opcode & 0x00FF);
-    uint16_t NNN = (opcode & 0x0FFF);
+    uint16_t opcode = chip8->opcode;       // Присваиваем опкод
+    uint8_t X    = (opcode & 0x0F00) >> 8; // Вытаскиваем X из опкода (0000 1111 0000 0000)
+    uint8_t Y    = (opcode & 0x00F0) >> 4; // Выдаскиваем Y из опкода (0000 0000 1111 0000)
+    uint8_t N    = (opcode & 0x000F);      // Вытаскиваем N из опкода (0000 0000 0000 1111)
+    uint8_t NN   = (opcode & 0x00FF);      // Вытаскиваем NN из опкода (0000 0000 1111 1111) 
+    uint16_t NNN = (opcode & 0x0FFF);      // Вытаскиваем NNN из опкода (0000 1111 1111 1111)
 
-    switch (opcode & 0xF000) 
-    {
-        case 0x0000:
+    switch (opcode & 0xF000) // Вот тут мы выделяем именно первые 4 бита опкода (1111 0000 0000 0000)
+    {                        // По сути данные биты это номер команды
+        case 0x0000:         // Инструкции 00E0 и 00EE
         {
-            if (opcode == 0x00E0) // Стираем экран
-                memset(chip8->video, 0, sizeof(chip8->video));
-            
-            else if (opcode == 0x00EE) // работаем со стеком. После функции возвращаемся 
-            {
-                chip8->sp--;
+            if (opcode == 0x00E0)                              // Если опкод 00E0, стираем экран
+                memset(chip8->video, 0, sizeof(chip8->video)); // То есть обнуляем память 
+           
+            // Опкод 00EE означает возврат с функции, 
+            // return по сути 00EE вызывает после 2NNN, чтобы и дальше шагать по ОЗУ
+            else if (opcode == 0x00EE) 
+            {                         
+                chip8->sp--;           
                 chip8->pc = chip8->stack[chip8->sp];
             }
             break;
         }
-        case 0x1000: // Инструкция 1NNN: Безусловный переход (Jump)
+
+
+        case 0x1000: // Инструкция 1NNN: Переход без возврата
         {
-            chip8->pc = NNN; // Просто перезаписываем счетчик команд на новый адрес
-            break;
+            // Просто перезаписываем счетчик команд на новый адрес
+            // И по сути посел перезаписи pc, дальше шагаем по другому адресу
+            chip8->pc = NNN; 
+            break;           
         }
-        case 0x2000: // Инструкция 2NNN: CALL addr (Вызов функции)
-        {
+
+        case 0x2000: // Инструкция 2NNN: Вызов функции
+        {       
             chip8->stack[chip8->sp] = chip8->pc; // Шаг 1: Запоминаем текущий адрес в массив стека
             chip8->sp++;                         // Шаг 2: Сдвигаем указатель стека вверх
             chip8->pc = NNN;                     // Шаг 3: Перезаписываем PC и прыгаем на адрес функции
             break;
         }
-        case 0x3000: // Инструкция 3XNN: SE Vx, byte (Пропустить, если равно)
+
+        case 0x3000: // Инструкция 3XNN: Пропускаем опкод если X равно NN
         {
             if (chip8->registers[X] == NN) 
                 chip8->pc += 2; // Перешагиваем через следующий двухбайтовый опкод
             break;
         }
+
         case 0x4000: // Инструкция 4XNN 
         {
             if (chip8->registers[X] != NN) 
                 chip8->pc += 2;
             break;
         }
+
         case 0x5000: // Инструкция 5XY0 Тоже пропуск следующего опкода
         {
         if (chip8->registers[X] == chip8->registers[Y])
                 chip8->pc += 2;
             break;
         }
+
         case 0x6000: // Интсрукция 6XNN Запись числа NN в регистр VX
         {
             chip8->registers[X] = NN;
             break;
         }
+
         case 0x7000: // Инструкция 7XNN 
         {
             // Прибавляем число NN к текущему значению регистра VX
             chip8->registers[X] += NN;
             break;
         }
+
         case 0x8000:
         {
             switch (N) // Смотрим на последнюю цифру опкода (переменную N) для выбора операции
@@ -204,27 +229,32 @@ void Chip8_Cycle(Chip8 *chip8)
             }
             break;
         }
+
         case 0x9000: // Интсрукция 9XYE
         {
             if (chip8->registers[X] != chip8->registers[Y]) 
                 chip8->pc += 2; // Пропускаем следующий опкод, если регистры не равны
             break;
         }
+
         case 0xA000: // Инструкция ANNN: LD I, addr (Загрузка индекса)
         {
             chip8->index = NNN; // Записываем адрес NNN в индексный регистр I
             break;
         }
+
         case 0xB000: // Инструкция BNNN: JP V0, addr (Прыжок со смещением V0)
         {
             chip8->pc = NNN + chip8->registers[0]; // Перезаписываем счетчик команд на адрес NNN плюс значение V0
             break;
         }
+
         case 0xC000: // Инструкция CXNN: RND Vx, byte (Случайное число с маской NN)
         {
             chip8->registers[X] = (rand() & 0xFF) & NN; // Генерируем случайный байт, накладываем маску NN и пишем в VX
             break;
         }
+
         case 0xD000: // Инструкция DXYN: DRW Vx, Vy, nibble (Отрисовка спрайта)
         {
             uint8_t x_pos = chip8->registers[X] % 64; // Получаем координату X с защитой от вылета за экран
@@ -257,6 +287,7 @@ void Chip8_Cycle(Chip8 *chip8)
             }
             break;
         }
+
         case 0xE000:
         {
             switch (NN) // Смотрим на последние две цифры (байт NN) для выбора операции
@@ -277,6 +308,7 @@ void Chip8_Cycle(Chip8 *chip8)
             }
             break;
         }
+
         case 0xF000:
         {
             switch (NN) // Смотрим на последние две цифры (байт NN) для выбора операции
