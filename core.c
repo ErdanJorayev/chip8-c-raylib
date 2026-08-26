@@ -28,7 +28,7 @@ const uint8_t fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-// Если кнопка нажата, IsKeyDonw() вызывает true, иначе false
+// Если кнопка нажата, IsKeyDown() вызывает true, иначе false
 void HandleInput(Chip8 * chip8) 
 {
     chip8->keypad[0x1] = IsKeyDown(KEY_ONE);   
@@ -68,7 +68,7 @@ void Chip8_Init(Chip8 *chip8)
 // Открываем файл игры и копируем его в наш ОЗУ(массив)
 bool Chip8_LoadROM(Chip8 * chip8, const char * filename) 
 {
-    FILE *file = fopen(filename, "rb");
+    FILE * file = fopen(filename, "rb");
     if (!file) 
         return false;
 
@@ -108,11 +108,10 @@ void Chip8_Cycle(Chip8 *chip8)
             break;
         }
 
-
         case 0x1000: // Инструкция 1NNN: Переход без возврата
         {
             // Просто перезаписываем счетчик команд на новый адрес
-            // И по сути посел перезаписи pc, дальше шагаем по другому адресу
+            // И по сути посел перезаписи pc, дальше шагаем по другому адресу(NNN)
             chip8->pc = NNN; 
             break;           
         }
@@ -132,29 +131,28 @@ void Chip8_Cycle(Chip8 *chip8)
             break;
         }
 
-        case 0x4000: // Инструкция 4XNN 
+        case 0x4000: // Инструкция 4XNN: Пропускаем опкод если X не равно NN
         {
             if (chip8->registers[X] != NN) 
                 chip8->pc += 2;
             break;
         }
 
-        case 0x5000: // Инструкция 5XY0 Тоже пропуск следующего опкода
+        case 0x5000: // Инструкция 5XY0: Если X и Y равны, пропуск опкода
         {
         if (chip8->registers[X] == chip8->registers[Y])
                 chip8->pc += 2;
             break;
         }
 
-        case 0x6000: // Интсрукция 6XNN Запись числа NN в регистр VX
+        case 0x6000: // Инструкция 6XNN: Запись числа NN в регистр X
         {
             chip8->registers[X] = NN;
             break;
         }
 
-        case 0x7000: // Инструкция 7XNN 
+        case 0x7000: // Инструкция 7XNN: Прибавляем значение X регистра
         {
-            // Прибавляем число NN к текущему значению регистра VX
             chip8->registers[X] += NN;
             break;
         }
@@ -163,77 +161,77 @@ void Chip8_Cycle(Chip8 *chip8)
         {
             switch (N) // Смотрим на последнюю цифру опкода (переменную N) для выбора операции
             {
-                case 0x0: // Инструкция 8XY0: LD Vx, Vy (Копирование)
+                case 0x0: // Инструкция 8XY0: Копируем значение из регистра Y в регистр X
                 {
-                    chip8->registers[X] = chip8->registers[Y]; // Копируем значение из регистра VY в регистр VX
+                    chip8->registers[X] = chip8->registers[Y]; 
                     break;
                 }
 
-                case 0x1: // Инструкция 8XY1: OR Vx, Vy (Побитовое ИЛИ)
+                case 0x1: // Инструкция 8XY1: Выполняем побитовое ИЛИ между X и Y
                 {
-                    chip8->registers[X] |= chip8->registers[Y]; // Выполняем побитовое ИЛИ между VX и VY
+                    chip8->registers[X] |= chip8->registers[Y]; 
                     break;
                 }
 
-                case 0x2: // Инструкция 8XY2: AND Vx, Vy (Побитовое И)
+                case 0x2: // Инструкция 8XY2: Выполняем побитовое И между X и Y
                 {
-                    chip8->registers[X] &= chip8->registers[Y]; // Выполняем побитовое И между VX и VY
+                    chip8->registers[X] &= chip8->registers[Y]; 
                     break;
                 }
 
-                case 0x3: // Инструкция 8XY3: XOR Vx, Vy (Побитовый XOR)
+                case 0x3: // Инструкция 8XY3: Выполняем исключающее ИЛИ между VX и VY
                 {
-                    chip8->registers[X] ^= chip8->registers[Y]; // Выполняем исключающее ИЛИ между VX и VY
+                    chip8->registers[X] ^= chip8->registers[Y]; 
                     break;
                 }
 
-                case 0x4: // Инструкция 8XY4: ADD Vx, Vy (Сложение с переносом)
+                case 0x4: // Инструкция 8XY4: Сложение с переносом
                 {
                     uint16_t sum = chip8->registers[X] + chip8->registers[Y]; // Считаем сумму в 16 битах, чтобы поймать переполнение
-                    chip8->registers[X] = sum & 0xFF; // Записываем результат сложения в регистр VX
-                    chip8->registers[0xF] = (sum > 255) ? 1 : 0; // Если сумма больше 255, выставляем флаг переноса VF = 1, иначе 0
+                    chip8->registers[X] = sum & 0xFF;                         // Записываем результат сложения в регистр X
+                    chip8->registers[0xF] = (sum > 255) ? 1 : 0;              // Если сумма больше 255, F = 1 иначе 0
                     break;
                 }
 
-                case 0x5: // Инструкция 8XY5: SUB Vx, Vy (Вычитание с заёмом)
+                case 0x5: // Инструкция 8XY5: Вычитание с заёмом
                 {
-                    uint8_t borrow = (chip8->registers[X] >= chip8->registers[Y]) ? 1 : 0; // Запоминаем флаг: 1 если заёма нет, 0 если заём нужен
-                    chip8->registers[X] -= chip8->registers[Y]; // Вычитаем значение VY из регистра VX
-                    chip8->registers[0xF] = borrow; // Записываем флаг заёма в регистр VF
+                    uint8_t borrow = (chip8->registers[X] >= chip8->registers[Y]) ? 1 : 0; // 1 если есть заем, иначе 0
+                    chip8->registers[X] -= chip8->registers[Y];                            // Вычитаем значение Y из регистра X
+                    chip8->registers[0xF] = borrow;                                        // Записываем флаг заёма в регистр F
                     break;
                 }
 
-                case 0x6: // Инструкция 8XY6: SHR Vx {, Vy} (Сдвиг вправо)
+                case 0x6: // Инструкция 8XY6: Сдвиг вправо
                 {
-                    uint8_t lsb = chip8->registers[X] & 0x01; // Вытаскиваем самый младший (правый) бит регистра VX
-                    chip8->registers[X] >>= 1; // Сдвигаем биты регистра VX вправо на 1 шаг (деление на 2)
-                    chip8->registers[0xF] = lsb; // Сохраняем вылетевший бит в системный регистр VF
+                    uint8_t lsb = chip8->registers[X] & 0x01; // Вытаскиваем самый младший (правый) бит регистра X
+                    chip8->registers[X] >>= 1;                // Сдвигаем биты регистра X вправо на 1 шаг (деление на 2)
+                    chip8->registers[0xF] = lsb;              // Сохраняем вылетевший бит в системный регистр VF
                     break;
                 }
 
-                case 0x7: // Инструкция 8XY7: SUBN Vx, Vy (Обратное вычитание)
+                case 0x7: // Инструкция 8XY7: Обратное вычитание
                 {
                     uint8_t borrow = (chip8->registers[Y] >= chip8->registers[X]) ? 1 : 0; // Запоминаем флаг: 1 если заёма нет, 0 если заём нужен
-                    chip8->registers[X] = chip8->registers[Y] - chip8->registers[X]; // Вычитаем VX из VY и пишем результат в VX
-                    chip8->registers[0xF] = borrow; // Записываем флаг заёма в регистр VF
+                    chip8->registers[X] = chip8->registers[Y] - chip8->registers[X];       // Вычитаем X из Y и пишем результат в X
+                    chip8->registers[0xF] = borrow;                                        // Записываем флаг заёма в регистр VF
                     break;
                 }
 
-                case 0xE: // Инструкция 8XYE: SHL Vx {, Vy} (Сдвиг влево)
+                case 0xE: // Инструкция 8XYE: Побитовый сдвиг влево
                 {
                     uint8_t msb = (chip8->registers[X] & 0x80) >> 7; // Вытаскиваем самый старший (левый) бит регистра VX
-                    chip8->registers[X] <<= 1; // Сдвигаем биты регистра VX влево на 1 шаг (умножение на 2)
-                    chip8->registers[0xF] = msb; // Сохраняем вылетевший бит в системный регистр VF
+                    chip8->registers[X] <<= 1;                       // Сдвигаем биты регистра VX влево на 1 шаг (умножение на 2)
+                    chip8->registers[0xF] = msb;                     // Сохраняем вылетевший бит в системный регистр VF
                     break;
                 }
             }
             break;
         }
 
-        case 0x9000: // Интсрукция 9XYE
+        case 0x9000: // Интсрукция 9XYE: Также пропуск опкода
         {
             if (chip8->registers[X] != chip8->registers[Y]) 
-                chip8->pc += 2; // Пропускаем следующий опкод, если регистры не равны
+                chip8->pc += 2; 
             break;
         }
 
@@ -273,15 +271,13 @@ void Chip8_Cycle(Chip8 *chip8)
                     if ((sprite_byte & (0x80 >> col)) != 0) // Проверяем, горит ли текущий бит в байте спрайта
                     {
                         size_t screen_index = (x_pos + col) + ((y_pos + row) * 64); // Вычисляем индекс пикселя в массиве video
-                        if (chip8->video[screen_index] == 0xFFFFFFFF) // Если пиксель на экране уже белый
+                        if (chip8->video[screen_index] == 0xFF) // Если пиксель на экране уже белый
                         {
-                            chip8->video[screen_index] = 0x00000000; // Гасим его (XOR-эффект)
+                            chip8->video[screen_index] = 0x0; // Гасим его (XOR-эффект)
                             chip8->registers[0xF] = 1; // Фиксируем столкновение в регистре VF
                         }
                         else
-                        {
-                            chip8->video[screen_index] = 0xFFFFFFFF; // Зажигаем пиксель белым цветом
-                        }
+                            chip8->video[screen_index] = 0xFF; // Зажигаем пиксель белым цветом
                     }
                 }
             }
@@ -370,13 +366,15 @@ void Chip8_Cycle(Chip8 *chip8)
 
                 case 0x55: // Инструкция FX55: LD [I], Vx (Сохранить регистры в память)
                 {
-                    for (uint8_t i = 0; i <= X; i++) chip8->memory[chip8->index + i] = chip8->registers[i]; // Пишем регистры от V0 до VX в память начиная с I
+                    for (uint8_t i = 0; i <= X; i++) 
+                        chip8->memory[chip8->index + i] = chip8->registers[i]; // Пишем регистры от V0 до VX в память начиная с I
                     break;
                 }
 
                 case 0x65: // Инструкция FX65: LD Vx, [I] (Загрузить регистры из памяти)
                 {
-                    for (uint8_t i = 0; i <= X; i++) chip8->registers[i] = chip8->memory[chip8->index + i]; // Заполняем регистры от V0 до VX данными из памяти начиная с I
+                    for (uint8_t i = 0; i <= X; i++) 
+                        chip8->registers[i] = chip8->memory[chip8->index + i]; // Заполняем регистры от V0 до VX данными из памяти начиная с I
                     break;
                 }
             }
